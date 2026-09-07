@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { signInUser } from "../api/authApi";
 
 export const SignIn = () => {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ export const SignIn = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   const handleUsernameUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUsername(e.target.value);
@@ -98,37 +101,39 @@ export const SignIn = () => {
     password.length > 0 ||
     confirmPassword.length > 0;
 
-const sendInformation = (
-  e: React.SubmitEvent<HTMLFormElement>,
-) => {
-  e.preventDefault();
+  const sendInformation = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-  if (
-    formValid &&
-    username === "admin" &&
-    password === "123456"
-  ) {
-    toast.success("Successfully logged in!", {
-      position: "top-right",
-      autoClose: 1500,
-      hideProgressBar: true,
-      theme: "light",
-    });
+    if (formValid) {
+      setIsLoading(true);
+      setErrorMessage("");
 
-    setTimeout(() => {
-      navigate("/");
-    }, 1500);
-  }
-};
+      try {
+        const result = await signInUser(username, email, password);
 
+        if (result.success) {
+          localStorage.setItem("token", result.data.token);
 
-  const notify = () =>
-    toast.success("Account created successfully!", {
-      position: "top-right",
-      autoClose: 1500,
-      hideProgressBar: true,
-      theme: "light",
-    });
+          toast.success("Account created successfully!", {
+            position: "top-right",
+            autoClose: 1500,
+            hideProgressBar: true,
+            theme: "light",
+          });
+
+          setTimeout(() => {
+            navigate("/");
+          }, 1500);
+        } else {
+          setErrorMessage(result.message);
+        }
+      } catch (error) {
+        setErrorMessage("An unexpected error. Please try again.");
+      }
+
+      setIsLoading(false);
+    }
+  };
 
   const displayUsernameError = () => {
     let errorMessage = "";
@@ -275,8 +280,10 @@ const sendInformation = (
             )}
           </InputGroup>
 
+          {errorMessage && <ErrorText>{errorMessage}</ErrorText>}
+
           <ButtonGroup>
-            <SubmitButton type="submit" onClick={notify} disabled={!formValid}>
+            <SubmitButton type="submit" disabled={!formValid || isLoading}>
               Sign up
             </SubmitButton>
 
