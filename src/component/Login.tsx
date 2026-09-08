@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { loginUser } from "../api/authApi";
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export const Login = () => {
     if (generalError) setGeneralError("");
   };
 
-  const sendInformation = (e: React.SubmitEvent<HTMLFormElement>) => {
+  const sendInformation = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     setUsernameError("");
@@ -43,22 +44,25 @@ export const Login = () => {
       setPasswordError("Password is required");
       isValid = false;
     }
+    if (!isValid) return;
 
-    if (isValid) {
-      if (username !== "admin" || password !== "123456") {
-        setGeneralError("Invalid username or password.");
-      } else {
-        toast.success("Successfully logged in!", {
-          position: "top-right",
-          autoClose: 1500,
-          hideProgressBar: true,
-          theme: "light",
-        });
+    try {
+      const data = await loginUser(username, password);
 
-        setTimeout(() => {
-          navigate("/");
-        }, 1500);
-      }
+      localStorage.setItem("token", data.token);
+
+      toast.success("Successfully logged in!", {
+        position: "top-right",
+        autoClose: 1500,
+        hideProgressBar: true,
+        theme: "light",
+      });
+
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
+    } catch (err) {
+      setGeneralError((err as Error).message);
     }
   };
 
