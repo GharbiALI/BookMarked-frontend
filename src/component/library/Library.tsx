@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -7,13 +7,37 @@ import { Header } from "../Header";
 import { Footer } from "../Footer";
 import { BookCard } from "./BookCard";
 import { BookForm } from "./BookForm";
-import { type Book, initialBooks } from "./types";
+import { type Book } from "./types";
+import {
+  fetchBooks,
+  createBook,
+  updateBook,
+  deleteBook,
+} from "../../api/bookApi";
 
 export const Library = () => {
-  const [books, setBooks] = useState<Book[]>(initialBooks);
-
+  const [books, setBooks] = useState<Book[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+
+  useEffect(() => {
+    const loadBooks = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await fetchBooks();
+        setBooks(data);
+      } catch (err) {
+        setError((err as Error).message || "Failed to load books");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBooks();
+  }, []);
 
   const openAddForm = () => {
     setEditingBook(null);
@@ -30,36 +54,58 @@ export const Library = () => {
     setEditingBook(null);
   };
 
-  const handleSave = (bookData: Omit<Book, "id">) => {
-    if (editingBook) {
+  const handleSave = async (bookData: Book) => {
+    const isEditing = editingBook !== null;
+    const { id, ...rest } = bookData;
+
+    try {
+      const saved = isEditing
+        ? await updateBook(editingBook.id, rest)
+        : await createBook(rest);
+
       setBooks((prev) =>
-        prev.map((b) =>
-          b.id === editingBook.id ? { ...bookData, id: b.id } : b,
-        ),
+        isEditing
+          ? prev.map((b) => (b.id === saved.id ? saved : b))
+          : [...prev, saved],
       );
-    } else {
-      const newBook: Book = { ...bookData, id: Date.now().toString() };
-      setBooks((prev) => [...prev, newBook]);
+
+      toast.success(
+        isEditing ? "Book updated successfully!" : "Book added successfully!",
+        {
+          position: "top-right",
+          autoClose: 1500,
+          hideProgressBar: true,
+          theme: "light",
+        },
+      );
+
+      closeForm();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save book");
     }
-    closeForm();
   };
 
-  const handleDeleteBook = (id: string) => {
+  const handleDeleteBook = async (id: string) => {
     const bookToDelete = books.find((b) => b.id === id);
 
-    setBooks((prev) => prev.filter((b) => b.id !== id));
+    try {
+      await deleteBook(id);
+      setBooks((prev) => prev.filter((b) => b.id !== id));
 
-    toast.error(
-      bookToDelete
-        ? `"${bookToDelete.title}" removed successfully!`
-        : "Book deleted successfully!",
-      {
-        position: "top-right",
-        autoClose: 1500,
-        hideProgressBar: true,
-        theme: "light",
-      }
-    );
+      toast.error(
+        bookToDelete
+          ? `"${bookToDelete.title}" removed successfully!`
+          : "Book deleted successfully!",
+        {
+          position: "top-right",
+          autoClose: 1500,
+          hideProgressBar: true,
+          theme: "light",
+        },
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete book");
+    }
   };
 
   return (
@@ -74,7 +120,11 @@ export const Library = () => {
             + Add book
           </AddButton>
         </TopBar>
-        {books.length === 0 ? (
+        {isLoading ? (
+          <EmptyState>Loading your library...</EmptyState>
+        ) : error ? (
+          <EmptyState>{error}</EmptyState>
+        ) : books.length === 0 ? (
           <EmptyState>Your library is empty — add your first book.</EmptyState>
         ) : (
           <BookContainer>
@@ -111,7 +161,6 @@ const PageContainer = styled.div`
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: #ebf2fa;
-
 `;
 
 const Main = styled.main`
