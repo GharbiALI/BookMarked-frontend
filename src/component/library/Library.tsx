@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import styled from "styled-components";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -14,25 +14,23 @@ import {
   updateBook,
   deleteBook,
 } from "../../api/bookApi";
+import { libraryReducer, initialState } from "./libraryReducer";
 
 export const Library = () => {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [state, dispatch] = useReducer(libraryReducer, initialState);
+  const { books, isLoading, error, formOpen, editingBook } = state;
 
   useEffect(() => {
     const loadBooks = async () => {
-      setIsLoading(true);
-      setError(null);
+      dispatch({ type: "FETCH_START" });
       try {
         const data = await fetchBooks();
-        setBooks(data);
+        dispatch({ type: "FETCH_SUCCESS", payload: data });
       } catch (err) {
-        setError((err as Error).message || "Failed to load books");
-      } finally {
-        setIsLoading(false);
+        dispatch({
+          type: "FETCH_ERROR",
+          payload: (err as Error).message || "Failed to load books",
+        });
       }
     };
 
@@ -40,18 +38,15 @@ export const Library = () => {
   }, []);
 
   const openAddForm = () => {
-    setEditingBook(null);
-    setFormOpen(true);
+    dispatch({ type: "OPEN_ADD_FORM" });
   };
 
   const openEditForm = (book: Book) => {
-    setEditingBook(book);
-    setFormOpen(true);
+    dispatch({ type: "OPEN_EDIT_FORM", payload: book });
   };
 
   const closeForm = () => {
-    setFormOpen(false);
-    setEditingBook(null);
+    dispatch({ type: "CLOSE_FORM" });
   };
 
   const handleSave = async (bookData: Book) => {
@@ -63,11 +58,7 @@ export const Library = () => {
         ? await updateBook(editingBook.id, rest)
         : await createBook(rest);
 
-      setBooks((prev) =>
-        isEditing
-          ? prev.map((b) => (b.id === saved.id ? saved : b))
-          : [...prev, saved],
-      );
+      dispatch({ type: "SAVE_SUCCESS", payload: saved });
 
       toast.success(
         isEditing ? "Book updated successfully!" : "Book added successfully!",
@@ -78,10 +69,8 @@ export const Library = () => {
           theme: "light",
         },
       );
-
-      closeForm();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save book");
+      toast.error((err as Error).message || "Failed to save book");
     }
   };
 
@@ -90,7 +79,7 @@ export const Library = () => {
 
     try {
       await deleteBook(id);
-      setBooks((prev) => prev.filter((b) => b.id !== id));
+      dispatch({ type: "DELETE_SUCCESS", payload: id });
 
       toast.error(
         bookToDelete
@@ -104,7 +93,7 @@ export const Library = () => {
         },
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete book");
+      toast.error((err as Error).message || "Failed to delete book");
     }
   };
 
