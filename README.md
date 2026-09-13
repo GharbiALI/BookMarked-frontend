@@ -1,75 +1,57 @@
-# React + TypeScript + Vite
+# BookMarked Frontend 📖
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the frontend client for BookMarked, a personal library tracker. It lets you create an account, log in, and manage a shelf of books — moving each one between **to read**, **reading**, and **finished**, with a star rating once you're done.
 
-Currently, two official plugins are available:
+It's built with React and TypeScript, and talks to the [BookMarked backend](../backend) over a REST API using `fetch`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Project stack information
 
-## React Compiler
+- **React** (with hooks and `useReducer` for state) — [React DOCS](https://react.dev/) ⚛️
+- **TypeScript** — [TypeScript DOCS](https://www.typescriptlang.org/docs/) 🧠
+- **Vite** (dev server and build tool) — [Vite DOCS](https://vite.dev/) ⚡
+- **React Router** (client-side routing) — [React Router DOCS](https://reactrouter.com/) 🧭
+- **styled-components** (CSS-in-JS styling) — [styled-components DOCS](https://styled-components.com/) 💅
+- **react-toastify** (toast notifications) — [react-toastify DOCS](https://fkhadra.github.io/react-toastify/) 🔔
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Setup ⏳
 
-## Expanding the ESLint configuration
+You'll need Node.js installed (latest LTS recommended).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+You'll also need the [BookMarked backend](../backend) running locally on `http://localhost:4000`, since this frontend calls it directly for authentication and book data.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## How to run the project ⏲
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+1. Open a new terminal.
+2. `cd` to the path of the project root.
+3. Run `npm i` to install all packages.
+4. Make sure the backend is running first (see the backend's own README).
+5. Run `npm run dev`.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+If everything is fine, Vite will start a dev server, usually at `http://localhost:5173`.
 
-```
+## Available scripts
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+use  `npm run dev` to starts the local dev server with hot 
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Routes
 
-```
+| Path | Page | Notes |
+|---|---|---|
+| `/` | Home | Public landing page |
+| `/login` | Login | Public |
+| `/signin` | Sign up | Public |
+| `/library` | My library | Requires being logged in — redirects to `/login` otherwise |
+| `*` | 404 | Any unmatched route |
+
+## Authentication
+
+On successful login or signup, the backend's JWT is stored in `localStorage` under the key `token`, and sent back on every book request as an `Authorization: Bearer <token>` header. Logging out simply clears it.
+
+## Features
+
+- Create an account and log in
+- Add, edit, and delete books in your library
+- Move a book between **to read**, **reading**, and **finished**
+- Rate finished books
+- Protected `/library` route — only accessible while logged in
