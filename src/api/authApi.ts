@@ -35,3 +35,11 @@ export const loginUser = async (username: string, password: string) => {
 
   return result.data;
 };
+
+export const logout = () => {
+  localStorage.removeItem("token");
+};
+
+export const isLoggedIn = (): boolean => {
+  return localStorage.getItem("token") !== null;
+};
