@@ -1,8 +1,16 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { isLoggedIn, logout } from "../api/authApi";
 
 export const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const loggedIn = isLoggedIn();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <HeaderContainer>
@@ -16,20 +24,28 @@ export const Header = () => {
             Home
           </NavigationLink>
 
-          <NavigationLink
-            to="/library"
-            $active={location.pathname === "/library"}
-          >
-            My library
-          </NavigationLink>
+          {loggedIn && (
+            <NavigationLink
+              to="/library"
+              $active={location.pathname === "/library"}
+            >
+              My library
+            </NavigationLink>
+          )}
 
-          <NavigationLink to="/login" $active={location.pathname === "/login"}>
-            Log in
-          </NavigationLink>
-
-          <CreateAccountLink to="/signin">
-            Create account
-          </CreateAccountLink>
+          {loggedIn ? (
+            <LogoutButton onClick={handleLogout}>Log out</LogoutButton>
+          ) : (
+            <>
+              <NavigationLink
+                to="/login"
+                $active={location.pathname === "/login"}
+              >
+                Log in
+              </NavigationLink>
+              <CreateAccountLink to="/signin">Create account</CreateAccountLink>
+            </>
+          )}
         </Navigation>
       </HeaderContent>
     </HeaderContainer>
@@ -78,12 +94,32 @@ const Navigation = styled.nav`
   gap: 12px;
 `;
 
+const LogoutButton = styled.button`
+  padding: 8px 16px;
+
+  color: #475569;
+  background-color: transparent;
+
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+
+  border: none;
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  &:hover {
+    color: #2563eb;
+    background-color: #f8fafc;
+  }
+`;
+
 const NavigationLink = styled(Link)<{ $active?: boolean }>`
   padding: 8px 16px;
 
   color: ${(props) => (props.$active ? "#2563eb" : "#475569")};
-  background-color: ${(props) =>
-    props.$active ? "#eff6ff" : "transparent"};
+  background-color: ${(props) => (props.$active ? "#eff6ff" : "transparent")};
 
   font-size: 14px;
   font-weight: 600;
