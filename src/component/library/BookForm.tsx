@@ -10,52 +10,39 @@ interface BookFormProps {
   onSave: (book: Book) => void;
 }
 
+interface BookFormFields {
+  title: string;
+  author: string;
+  genre: string;
+  pages: string;
+  status: ReadStatus;
+  rating: string;
+}
+
+const getInitialFields = (editingBook: Book | null): BookFormFields => ({
+  title: editingBook !== null ? editingBook.title : "",
+  author: editingBook !== null ? editingBook.author : "",
+  genre: editingBook !== null ? editingBook.genre : "",
+  pages: editingBook !== null ? String(editingBook.pages) : "",
+  status: editingBook !== null ? editingBook.status : "to-read",
+  rating: editingBook !== null ? String(editingBook.rating) : "0",
+});
+
 export const BookForm = ({
   editingBook,
   onClose,
   onSave,
 }: BookFormProps) => {
-  const [title, setTitle] = useState<string>(
-    editingBook !== null ? editingBook.title : ""
+  const [fields, setFields] = useState<BookFormFields>(() =>
+    getInitialFields(editingBook)
   );
-  const [author, setAuthor] = useState<string>(
-    editingBook !== null ? editingBook.author : ""
-  );
-  const [genre, setGenre] = useState<string>(
-    editingBook !== null ? editingBook.genre : ""
-  );
-  const [pages, setPages] = useState<string>(
-    editingBook !== null ? String(editingBook.pages) : ""
-  );
-  const [status, setStatus] = useState<ReadStatus>(
-    editingBook !== null ? editingBook.status : "to-read"
-  );
-  const [rating, setRating] = useState<string>(
-    editingBook !== null ? String(editingBook.rating) : "0"
-  );
+  const { title, author, genre, pages, status, rating } = fields;
 
-  const handleTitleUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTitle(e.target.value);
-  };
-
-  const handleAuthorUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAuthor(e.target.value);
-  };
-
-  const handleGenreUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setGenre(e.target.value);
-  };
-
-  const handlePagesUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPages(e.target.value);
-  };
-
-  const handleStatusUpdate = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setStatus(e.target.value as ReadStatus);
-  };
-
-  const handleRatingUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRating(e.target.value);
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { id, value } = e.target;
+    setFields((prev) => ({ ...prev, [id as keyof BookFormFields]: value }));
   };
 
   const isTitleValid = title.trim().length >= 2;
@@ -114,7 +101,7 @@ export const BookForm = ({
               type="text"
               id="title"
               value={title}
-              onChange={handleTitleUpdate}
+              onChange={handleChange}
               placeholder="e.g. To Kill a Mockingbird"
               $hasValue={title !== ""}
               $isValid={isTitleValid}
@@ -130,7 +117,7 @@ export const BookForm = ({
               type="text"
               id="author"
               value={author}
-              onChange={handleAuthorUpdate}
+              onChange={handleChange}
               placeholder="e.g. Harper Lee"
               $hasValue={author !== ""}
               $isValid={isAuthorValid}
@@ -146,7 +133,7 @@ export const BookForm = ({
               type="text"
               id="genre"
               value={genre}
-              onChange={handleGenreUpdate}
+              onChange={handleChange}
               placeholder="e.g. Fiction"
               $hasValue={genre !== ""}
               $isValid={true}
@@ -161,7 +148,7 @@ export const BookForm = ({
                 id="pages"
                 min="1"
                 value={pages}
-                onChange={handlePagesUpdate}
+                onChange={handleChange}
                 placeholder="300"
                 $hasValue={pages !== ""}
                 $isValid={isPagesValid}
@@ -179,7 +166,7 @@ export const BookForm = ({
                 min="0"
                 max="5"
                 value={rating}
-                onChange={handleRatingUpdate}
+                onChange={handleChange}
                 placeholder="5"
                 $hasValue={rating !== ""}
                 $isValid={isRatingValid}
@@ -195,7 +182,7 @@ export const BookForm = ({
             <Select
               id="status"
               value={status}
-              onChange={handleStatusUpdate}
+              onChange={handleChange}
             >
               <option value="to-read">To Read</option>
               <option value="reading">Reading</option>

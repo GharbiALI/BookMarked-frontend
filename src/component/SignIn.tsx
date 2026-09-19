@@ -5,39 +5,40 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { signInUser } from "../api/authApi";
 
+interface SignInFields {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+interface SignInErrors {
+  general?: string;
+}
+
+const initialFields: SignInFields = {
+  username: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+};
+
 export const SignIn = () => {
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [fields, setFields] = useState<SignInFields>(initialFields);
+  const [errors, setErrors] = useState<SignInErrors>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const handleUsernameUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUsername(e.target.value);
-  };
+  const { username, email, password, confirmPassword } = fields;
 
-  const handleEmailUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-  };
-
-  const handlePasswordUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-  };
-
-  const handleConfirmPasswordUpdate = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    setConfirmPassword(e.target.value);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const field = e.target.id as keyof SignInFields;
+    setFields((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
   const handleReset = () => {
-    setUsername("");
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
+    setFields(initialFields);
   };
 
   const hasMinLength = password.length >= 12;
@@ -101,12 +102,12 @@ export const SignIn = () => {
     password.length > 0 ||
     confirmPassword.length > 0;
 
-  const sendInformation = async (e: React.FormEvent<HTMLFormElement>) => {
+  const sendInformation = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (formValid) {
       setIsLoading(true);
-      setErrorMessage("");
+      setErrors({});
 
       try {
         const result = await signInUser(username, email, password);
@@ -125,10 +126,10 @@ export const SignIn = () => {
             navigate("/");
           }, 1500);
         } else {
-          setErrorMessage(result.message);
+          setErrors({ general: result.message });
         }
-      } catch (error) {
-        setErrorMessage("An unexpected error. Please try again.");
+      } catch {
+        setErrors({ general: "An unexpected error. Please try again." });
       }
 
       setIsLoading(false);
@@ -180,7 +181,7 @@ export const SignIn = () => {
               type="text"
               id="username"
               value={username}
-              onChange={handleUsernameUpdate}
+              onChange={handleChange}
               placeholder="Enter your username"
               $hasValue={username !== ""}
               $isValid={usernameValid}
@@ -198,7 +199,7 @@ export const SignIn = () => {
               type="email"
               id="email"
               value={email}
-              onChange={handleEmailUpdate}
+              onChange={handleChange}
               placeholder="Enter your email"
               $hasValue={email !== ""}
               $isValid={emailValid}
@@ -216,7 +217,7 @@ export const SignIn = () => {
               type="password"
               id="password"
               value={password}
-              onChange={handlePasswordUpdate}
+              onChange={handleChange}
               placeholder="Enter password"
               $hasValue={password !== ""}
               $isValid={passwordValid}
@@ -269,7 +270,7 @@ export const SignIn = () => {
               type="password"
               id="confirmPassword"
               value={confirmPassword}
-              onChange={handleConfirmPasswordUpdate}
+              onChange={handleChange}
               placeholder="Confirm password"
               $hasValue={confirmPassword !== ""}
               $isValid={confirmPasswordValid}
@@ -280,7 +281,7 @@ export const SignIn = () => {
             )}
           </InputGroup>
 
-          {errorMessage && <ErrorText>{errorMessage}</ErrorText>}
+          {errors.general && <ErrorText>{errors.general}</ErrorText>}
 
           <ButtonGroup>
             <SubmitButton type="submit" disabled={!formValid || isLoading}>
