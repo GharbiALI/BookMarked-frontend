@@ -3,38 +3,42 @@ import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { signInUser } from "../api/authApi";
+
+interface SignInFields {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+interface SignInErrors {
+  general?: string;
+}
+
+const initialFields: SignInFields = {
+  username: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+};
 
 export const SignIn = () => {
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [fields, setFields] = useState<SignInFields>(initialFields);
+  const [errors, setErrors] = useState<SignInErrors>({});
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const handleUsernameUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUsername(e.target.value);
-  };
+  const { username, email, password, confirmPassword } = fields;
 
-  const handleEmailUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-  };
-
-  const handlePasswordUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-  };
-
-  const handleConfirmPasswordUpdate = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    setConfirmPassword(e.target.value);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const field = e.target.id as keyof SignInFields;
+    setFields((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
   const handleReset = () => {
-    setUsername("");
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
+    setFields(initialFields);
   };
 
   const hasMinLength = password.length >= 12;
@@ -98,37 +102,39 @@ export const SignIn = () => {
     password.length > 0 ||
     confirmPassword.length > 0;
 
-const sendInformation = (
-  e: React.SubmitEvent<HTMLFormElement>,
-) => {
-  e.preventDefault();
+  const sendInformation = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-  if (
-    formValid &&
-    username === "admin" &&
-    password === "123456"
-  ) {
-    toast.success("Successfully logged in!", {
-      position: "top-right",
-      autoClose: 1500,
-      hideProgressBar: true,
-      theme: "light",
-    });
+    if (formValid) {
+      setIsLoading(true);
+      setErrors({});
 
-    setTimeout(() => {
-      navigate("/");
-    }, 1500);
-  }
-};
+      try {
+        const result = await signInUser(username, email, password);
 
+        if (result.success) {
+          localStorage.setItem("token", result.data.token);
 
-  const notify = () =>
-    toast.success("Account created successfully!", {
-      position: "top-right",
-      autoClose: 1500,
-      hideProgressBar: true,
-      theme: "light",
-    });
+          toast.success("Account created successfully!", {
+            position: "top-right",
+            autoClose: 1500,
+            hideProgressBar: true,
+            theme: "light",
+          });
+
+          setTimeout(() => {
+            navigate("/");
+          }, 1500);
+        } else {
+          setErrors({ general: result.message });
+        }
+      } catch {
+        setErrors({ general: "An unexpected error. Please try again." });
+      }
+
+      setIsLoading(false);
+    }
+  };
 
   const displayUsernameError = () => {
     let errorMessage = "";
@@ -175,7 +181,7 @@ const sendInformation = (
               type="text"
               id="username"
               value={username}
-              onChange={handleUsernameUpdate}
+              onChange={handleChange}
               placeholder="Enter your username"
               $hasValue={username !== ""}
               $isValid={usernameValid}
@@ -193,7 +199,7 @@ const sendInformation = (
               type="email"
               id="email"
               value={email}
-              onChange={handleEmailUpdate}
+              onChange={handleChange}
               placeholder="Enter your email"
               $hasValue={email !== ""}
               $isValid={emailValid}
@@ -211,7 +217,7 @@ const sendInformation = (
               type="password"
               id="password"
               value={password}
-              onChange={handlePasswordUpdate}
+              onChange={handleChange}
               placeholder="Enter password"
               $hasValue={password !== ""}
               $isValid={passwordValid}
@@ -264,7 +270,7 @@ const sendInformation = (
               type="password"
               id="confirmPassword"
               value={confirmPassword}
-              onChange={handleConfirmPasswordUpdate}
+              onChange={handleChange}
               placeholder="Confirm password"
               $hasValue={confirmPassword !== ""}
               $isValid={confirmPasswordValid}
@@ -275,8 +281,10 @@ const sendInformation = (
             )}
           </InputGroup>
 
+          {errors.general && <ErrorText>{errors.general}</ErrorText>}
+
           <ButtonGroup>
-            <SubmitButton type="submit" onClick={notify} disabled={!formValid}>
+            <SubmitButton type="submit" disabled={!formValid || isLoading}>
               Sign up
             </SubmitButton>
 

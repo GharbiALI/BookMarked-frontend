@@ -3,62 +3,71 @@ import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { loginUser } from "../api/authApi";
+
+interface LoginFields {
+  username: string;
+  password: string;
+}
+
+interface LoginErrors {
+  username?: string;
+  password?: string;
+  general?: string;
+}
+
+const initialFields: LoginFields = {
+  username: "",
+  password: "",
+};
+
+const validate = (fields: LoginFields): LoginErrors => {
+  const errors: LoginErrors = {};
+
+  if (!fields.username.trim()) errors.username = "Username is required";
+  if (!fields.password.trim()) errors.password = "Password is required";
+
+  return errors;
+};
 
 export const Login = () => {
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [usernameError, setUsernameError] = useState<string>("");
-  const [passwordError, setPasswordError] = useState<string>("");
-  const [generalError, setGeneralError] = useState<string>("");
+  const [fields, setFields] = useState<LoginFields>(initialFields);
+  const [errors, setErrors] = useState<LoginErrors>({});
 
-  const handleUsernameUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUsername(e.target.value);
-    if (usernameError) setUsernameError("");
-    if (generalError) setGeneralError("");
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const field = e.target.id as keyof LoginFields;
+
+    setFields((prev) => ({ ...prev, [field]: e.target.value }));
+    setErrors((prev) => ({ ...prev, [field]: undefined, general: undefined }));
   };
 
-  const handlePasswordUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-    if (passwordError) setPasswordError("");
-    if (generalError) setGeneralError("");
-  };
-
-  const sendInformation = (e: React.SubmitEvent<HTMLFormElement>) => {
+  const sendInformation = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    setUsernameError("");
-    setPasswordError("");
-    setGeneralError("");
+    const foundErrors = validate(fields);
+    setErrors(foundErrors);
 
-    let isValid = true;
+    if (Object.keys(foundErrors).length > 0) return;
 
-    if (!username.trim()) {
-      setUsernameError("Username is required");
-      isValid = false;
-    }
+    try {
+      const data = await loginUser(fields.username, fields.password);
 
-    if (!password.trim()) {
-      setPasswordError("Password is required");
-      isValid = false;
-    }
+      localStorage.setItem("token", data.token);
 
-    if (isValid) {
-      if (username !== "admin" || password !== "123456") {
-        setGeneralError("Invalid username or password.");
-      } else {
-        toast.success("Successfully logged in!", {
-          position: "top-right",
-          autoClose: 1500,
-          hideProgressBar: true,
-          theme: "light",
-        });
+      toast.success("Successfully logged in!", {
+        position: "top-right",
+        autoClose: 1500,
+        hideProgressBar: true,
+        theme: "light",
+      });
 
-        setTimeout(() => {
-          navigate("/");
-        }, 1500);
-      }
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
+    } catch (err) {
+      setErrors({ general: (err as Error).message });
     }
   };
 
@@ -82,11 +91,11 @@ export const Login = () => {
             <Input
               type="text"
               id="username"
-              value={username}
-              onChange={handleUsernameUpdate}
-              $hasError={Boolean(usernameError || generalError)}
+              value={fields.username}
+              onChange={handleChange}
+              $hasError={Boolean(errors.username || errors.general)}
             />
-            {usernameError && <ErrorText>{usernameError}</ErrorText>}
+            {errors.username && <ErrorText>{errors.username}</ErrorText>}
           </InputGroup>
 
           <InputGroup>
@@ -94,14 +103,14 @@ export const Login = () => {
             <Input
               type="password"
               id="password"
-              value={password}
-              onChange={handlePasswordUpdate}
-              $hasError={Boolean(passwordError || generalError)}
+              value={fields.password}
+              onChange={handleChange}
+              $hasError={Boolean(errors.password || errors.general)}
             />
-            {passwordError && <ErrorText>{passwordError}</ErrorText>}
+            {errors.password && <ErrorText>{errors.password}</ErrorText>}
           </InputGroup>
 
-          {generalError && <ErrorText>{generalError}</ErrorText>}
+          {errors.general && <ErrorText>{errors.general}</ErrorText>}
 
           <SubmitButton type="submit">Log in</SubmitButton>
         </StyledForm>
